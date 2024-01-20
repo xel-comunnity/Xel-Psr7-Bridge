@@ -10,12 +10,12 @@ use Psr\Http\Message\UploadedFileFactoryInterface;
 use Psr\Http\Message\UploadedFileInterface;
 use RuntimeException;
 
-class RequestMapper
+final class RequestMapper
 {
     private ServerRequestFactoryInterface $serverRequestFactory;
     private StreamFactoryInterface $streamFactory;
     private UploadedFileFactoryInterface $uploadedFileFactory;
-    public array $uploadFile;
+    public array $uploadFile =[];
 
     public function __invoke
     (
@@ -63,11 +63,11 @@ class RequestMapper
 
         // ? Map List
         return $mapper
-            ->withCookieParams($swooleCookie ??[])
-            ->withQueryParams($swooleQueryParam ?? [])
-            ->withParsedBody($swooleParseBody ?? [])
+            ->withCookieParams($swooleCookie)
+            ->withQueryParams($swooleQueryParam)
+            ->withParsedBody($swooleParseBody)
             ->withBody($this->streamFactory->createStream($rawContent))
-            ->withUploadedFiles($this->uploadFile ?? [])
+            ->withUploadedFiles($this->uploadFile)
             ->withProtocolVersion('1.1');
     }
 
@@ -76,7 +76,7 @@ class RequestMapper
         try {
             $stream = $this->streamFactory->createStreamFromFile($files['tmp_name']);
         } catch (RuntimeException) {
-            $stream = $this->streamFactory->createStream();
+            return $this->streamFactory->createStream();
         }
 
         return $this->uploadedFileFactory->createUploadedFile(

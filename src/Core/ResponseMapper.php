@@ -5,10 +5,13 @@ use Dflydev\FigCookies\SetCookie;
 use Dflydev\FigCookies\SetCookies;
 use Psr\Http\Message\ResponseInterface;
 use Swoole\Http\Response as SwooleResponse;
-class ResponseMapper
+
+final class ResponseMapper
 {
     private ResponseInterface $psr7Response;
     private SwooleResponse $swooleResponse;
+
+    const THRESHOLD = 8192;
     public function __invoke
     (
         ResponseInterface $psr7Response,
@@ -54,22 +57,31 @@ class ResponseMapper
     public function mapBody(ResponseInterface $response, SwooleResponse $swooleResponse): void
     {
         $body = $response->getBody();
+
+        $allocChunk = $body->getSize();
+
+        if ($allocChunk > self::THRESHOLD) {
+            $this->chuckAllocator($body,$allocChunk,$swooleResponse);
+        }
+
         if($body->isSeekable()){
             $body->rewind();
         }
 
-        $allocChunk = $body->getSize();
-        $getSizeChunk = $allocChunk > 3000 ? intval($allocChunk * 0.5 ) : $allocChunk;
+        $swooleResponse->end($body->getContents());
+    }
 
+    private function chuckAllocator($body,$allocChunk, $swooleResponse): void
+    {
+        $getSizeChunk = intval($allocChunk * 0.5);
         while (!$body->eof()) {
             $chunk = $body->read($getSizeChunk);
             if ($chunk === '') {
                 break;
             }
             $swooleResponse->write($chunk);
+            $swooleResponse->end();
         }
-
-        $swooleResponse->end();
     }
 
 }
