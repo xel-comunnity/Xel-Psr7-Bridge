@@ -1,9 +1,5 @@
 <br/>
 <p align="center">
-  <a href="https://github.com/Bxel07/Xel-Psr7-Bridge">
-    <img src="images/logo.png" alt="Logo" width="80" height="80">
-  </a>
-
   <h3 align="center">Swoole Psr7 Bridge</h3>
 
   <p align="center">
