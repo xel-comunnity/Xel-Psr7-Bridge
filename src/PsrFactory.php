@@ -47,7 +47,7 @@ readonly class PsrFactory implements BridgeFactoryApp
             $swooleRequest->header ?? [],
             $swooleRequest->cookie ?? [],
             $swooleRequest->get ?? [],
-            $swooleRequest->post ?? [],
+            $swooleRequest->getContent() ?? [],
             $swooleRequest->files ?? [],
             $swooleRequest->rawContent()
         );

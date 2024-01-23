@@ -17,6 +17,17 @@ final class RequestMapper
     private UploadedFileFactoryInterface $uploadedFileFactory;
     public array $uploadFile =[];
 
+
+    public function getStream(): StreamFactoryInterface
+    {
+        return $this->streamFactory;
+    }
+
+    public function getUploadFile(): UploadedFileFactoryInterface
+    {
+        return $this->uploadedFileFactory;
+    }
+
     public function __invoke
     (
         ServerRequestFactoryInterface $serverRequestFactory,
@@ -74,12 +85,12 @@ final class RequestMapper
     private function createUploadedFileStream(array $files): StreamInterface|UploadedFileInterface
     {
         try {
-            $stream = $this->streamFactory->createStreamFromFile($files['tmp_name']);
+            $stream = $this->getStream()->createStreamFromFile($files['tmp_name']);
         } catch (RuntimeException) {
-            return $this->streamFactory->createStream();
+            return $this->getStream()->createStream();
         }
 
-        return $this->uploadedFileFactory->createUploadedFile(
+        return $this->getUploadFile()->createUploadedFile(
             $stream,
             $files['size'],
             $files['error'],
