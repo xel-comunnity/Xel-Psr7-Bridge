@@ -3,10 +3,7 @@
 namespace Xel\Psr7bridge;
 
 use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestFactoryInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Message\StreamFactoryInterface;
-use Psr\Http\Message\UploadedFileFactoryInterface;
 use Xel\Psr7bridge\Contract\BridgeFactoryApp;
 use Swoole\Http\Request as SwooleRequest;
 use Swoole\Http\Response as SwooleResponse;
@@ -17,10 +14,8 @@ readonly class PsrFactory implements BridgeFactoryApp
 {
   public function __construct
   (
-    private ServerRequestFactoryInterface $serverRequestFactory,
-    private StreamFactoryInterface        $streamFactory,
-    private UploadedFileFactoryInterface  $uploadedFileFactory,
-
+    private RequestMapper $mapper,
+    private ResponseMapper $responseMapper
   ){}
     /*********************************************************
      * Request Mapper Field
@@ -28,29 +23,10 @@ readonly class PsrFactory implements BridgeFactoryApp
     public function connectRequest(SwooleRequest $request): ServerRequestInterface
     {
         // ? Convert Swoole request to PSR-7 ServerRequest
-        return $this->createServerRequestFromSwoole($request);
-    }
-
-    private function createServerRequestFromSwoole(SwooleRequest $swooleRequest): ServerRequestInterface
-    {
-        // ? instance of mapper
-        $Mapper = new RequestMapper();
-
-        // ? Map Swoole Request to PSR 7
-        return $Mapper(
-            $this->serverRequestFactory,
-            $this->streamFactory,
-            $this->uploadedFileFactory
-        )->serverMap
-        (
-            array_change_key_case($swooleRequest->server, CASE_UPPER),
-            $swooleRequest->header ?? [],
-            $swooleRequest->cookie ?? [],
-            $swooleRequest->get ?? [],
-            $swooleRequest->getContent() ?? [],
-            $swooleRequest->files ?? [],
-            $swooleRequest->rawContent()
+        return $this->mapper->serverMap(
+            $request
         );
+
     }
 
     /*********************************************************
@@ -63,9 +39,11 @@ readonly class PsrFactory implements BridgeFactoryApp
         $this->createResponseRequestFromSwoole($psr7, $swooleResponse);
     }
 
-    private function createResponseRequestFromSwoole(ResponseInterface $response,SwooleResponse $swooleResponse): void
+
+
+    private function createResponseRequestFromSwoole(ResponseInterface $response, SwooleResponse $swooleResponse): void
     {
-        $Mapper = new ResponseMapper();
+        $Mapper = $this->responseMapper;
         $Mapper($response,$swooleResponse)->responseMap();
     }
 }
