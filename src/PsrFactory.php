@@ -9,7 +9,6 @@ use Swoole\Http\Request as SwooleRequest;
 use Swoole\Http\Response as SwooleResponse;
 use Xel\Psr7bridge\Core\RequestMapper;
 use Xel\Psr7bridge\Core\ResponseMapper;
-use Xel\Psr7bridge\Test\Container\Register;
 
 final class PsrFactory implements BridgeFactoryApp
 {
@@ -17,7 +16,7 @@ final class PsrFactory implements BridgeFactoryApp
     private ?ResponseMapper $responseMapper = null;
     public function __construct
     (
-        private readonly Register $register
+        private $register
     ){}
 
 
