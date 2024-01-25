@@ -9,20 +9,31 @@ use Swoole\Http\Request as SwooleRequest;
 use Swoole\Http\Response as SwooleResponse;
 use Xel\Psr7bridge\Core\RequestMapper;
 use Xel\Psr7bridge\Core\ResponseMapper;
+use Xel\Psr7bridge\Test\Container\Register;
 
-readonly class PsrFactory implements BridgeFactoryApp
+final class PsrFactory implements BridgeFactoryApp
 {
-  public function __construct
-  (
-    private RequestMapper $mapper,
-    private ResponseMapper $responseMapper
-  ){}
+    private ?RequestMapper $mapper = null;
+    private ?ResponseMapper $responseMapper = null;
+    public function __construct
+    (
+        private readonly Register $register
+    ){}
+
+
     /*********************************************************
      * Request Mapper Field
      *********************************************************/
     public function connectRequest(SwooleRequest $request): ServerRequestInterface
     {
         // ? Convert Swoole request to PSR-7 ServerRequest
+        if ($this->mapper === null){
+            $this->mapper = new RequestMapper(
+                $this->register->get('ServerFactory'),
+                $this->register->get('StreamFactory'),
+                $this->register->get('UploadFactory')
+            );
+        }
         return $this->mapper->serverMap(
             $request
         );
@@ -35,15 +46,9 @@ readonly class PsrFactory implements BridgeFactoryApp
 
     public function connectResponse(ResponseInterface $psr7, SwooleResponse $swooleResponse): void
     {
-
-        $this->createResponseRequestFromSwoole($psr7, $swooleResponse);
-    }
-
-
-
-    private function createResponseRequestFromSwoole(ResponseInterface $response, SwooleResponse $swooleResponse): void
-    {
-        $Mapper = $this->responseMapper;
-        $Mapper($response,$swooleResponse)->responseMap();
+        if ($this->responseMapper === null){
+            $this->responseMapper = new ResponseMapper();
+        }
+        ($this->responseMapper)($psr7, $swooleResponse)->responseMap();
     }
 }

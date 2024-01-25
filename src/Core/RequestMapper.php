@@ -13,20 +13,16 @@ use Swoole\Http\Request as SwooleRequest;
 use RuntimeException;
 final class RequestMapper
 {
-    private ServerRequestFactoryInterface $serverRequestFactory;
-    private StreamFactoryInterface $streamFactory;
-    private UploadedFileFactoryInterface $uploadedFileFactory;
+
 
     public function __construct
     (
-        ServerRequestFactoryInterface $serverRequestFactory,
-        StreamFactoryInterface $streamFactory,
-        UploadedFileFactoryInterface $uploadedFileFactory
+        private ServerRequestFactoryInterface $serverRequestFactory,
+        private StreamFactoryInterface $streamFactory,
+        private UploadedFileFactoryInterface $uploadedFileFactory,
     )
     {
-        $this->serverRequestFactory = $serverRequestFactory;
-        $this->streamFactory = $streamFactory;
-        $this->uploadedFileFactory = $uploadedFileFactory;
+
     }
 
     public function getStream(): StreamFactoryInterface
@@ -53,40 +49,51 @@ final class RequestMapper
         SwooleRequest $swooleRequest
     ): ServerRequestInterface|MessageInterface
     {
-        // ? check swoole request
+        // Check Swoole request
         $server = array_change_key_case($swooleRequest->server, CASE_UPPER);
-        $mapper = $this->getServerRequest()
-            ->createServerRequest
-            (
+        $serverRequestFactory = $this->getServerRequest();
+        $mapper = $serverRequestFactory
+            ->createServerRequest(
                 $server["REQUEST_METHOD"],
                 $server["REQUEST_URI"],
                 $server
             );
 
-        // ? headerMap
+        // Map headers
         foreach ($swooleRequest->header as $case => $value) {
-            $mapper =  $mapper->withHeader($case, $value);
+            $mapper = $mapper->withHeader($case, $value);
         }
 
-        // ? uploadMap
+        // Map cookies
+        $cookies = $swooleRequest->cookie ?? [];
+        $mapper = $mapper->withCookieParams($cookies);
+
+        // Map query parameters
+        $queryParams = $swooleRequest->get ?? [];
+        $mapper = $mapper->withQueryParams($queryParams);
+
+        // Map parsed body (for POST requests)
+        if ($swooleRequest->getMethod() === 'POST') {
+            $parsedBody = $swooleRequest->post ?? [];
+            $mapper = $mapper->withParsedBody($parsedBody);
+        }
+
+        // Map uploaded files
         $uploadFile = [];
-        if (!empty($swooleRequest->files)){
+        if (!empty($swooleRequest->files)) {
             foreach ($swooleRequest->files as $case => $value) {
                 $uploadFile[$case] = $this->createUploadedFileStream($value);
             }
         }
 
-        // ? Map List
+        // Map the rest
         return $mapper
-            ->withCookieParams($swooleRequest->cookie ?? [])
-            ->withQueryParams($swooleRequest->get ?? [])
-            ->withParsedBody($swooleRequest->post ?? [])
             ->withBody($this->getStream()->createStream($swooleRequest->rawContent()))
             ->withUploadedFiles($uploadFile)
             ->withProtocolVersion('1.1');
     }
 
-    
+
     private function createUploadedFileStream(array $files): StreamInterface|UploadedFileInterface
     {
         // Check if all required keys are present
