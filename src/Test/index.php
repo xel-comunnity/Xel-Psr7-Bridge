@@ -1,9 +1,10 @@
 <?php
 
-use HttpSoft\Message\ResponseFactory;
-use HttpSoft\Message\ServerRequestFactory;
-use HttpSoft\Message\StreamFactory;
-use HttpSoft\Message\UploadedFileFactory;
+//use HttpSoft\Message\ResponseFactory;
+//use HttpSoft\Message\ServerRequestFactory;
+//use HttpSoft\Message\StreamFactory;
+//use HttpSoft\Message\UploadedFileFactory;
+use Nyholm\Psr7\Factory\Psr17Factory;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Xel\Psr7bridge\Test\Container\Register;
@@ -19,10 +20,10 @@ $server->set([
 $register = new Register();
 
 // ? Register the factories in the container
-$register->register('ServerFactory', ServerRequestFactory::class);
-$register->register('StreamFactory', StreamFactory::class);
-$register->register('UploadFactory', UploadedFileFactory::class);
-$register->register("ResponseFactory", ResponseFactory::class);
+$register->register('ServerFactory', Psr17Factory::class);
+$register->register('StreamFactory', Psr17Factory::class);
+$register->register('UploadFactory', Psr17Factory::class);
+$register->register("ResponseFactory", Psr17Factory::class);
 
 // ? Resolve the dependencies from the container
 $psrRequest = $register->resolve('ServerFactory');
@@ -49,6 +50,12 @@ $server->on('request', function (Request $req, Response $res) use ($psrBridge, $
             $response = $response->withHeader('Content-Type', 'application/json')
                 ->withStatus(200)
                 ->withBody($psrStream->createStream($bridgeRequest->getBody()->getContents()));
+
+            $psrBridge->connectResponse($response, $res);
+        } else {
+            $response = $response->withHeader('Content-Type', 'application/json')
+                ->withStatus(200)
+                ->withBody($psrStream->createStream("hello world"));
 
             $psrBridge->connectResponse($response, $res);
         }
