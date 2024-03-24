@@ -11,7 +11,7 @@ final class ResponseMapper
     private ResponseInterface $psr7Response;
     private SwooleResponse $swooleResponse;
 
-    const THRESHOLD = 8192;
+    const THRESHOLD = 4098;
     public function __invoke
     (
         ResponseInterface $psr7Response,
@@ -73,7 +73,7 @@ final class ResponseMapper
 
     private function chuckAllocator($body,$allocChunk, $swooleResponse): void
     {
-        $getSizeChunk = intval($allocChunk * 0.5);
+        $getSizeChunk = intval($allocChunk * 0.25);
         while (!$body->eof()) {
             $chunk = $body->read($getSizeChunk);
             if ($chunk === '') {

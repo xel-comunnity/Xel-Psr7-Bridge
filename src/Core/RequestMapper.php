@@ -11,15 +11,13 @@ use Psr\Http\Message\UploadedFileFactoryInterface;
 use Psr\Http\Message\UploadedFileInterface;
 use Swoole\Http\Request as SwooleRequest;
 use RuntimeException;
-final class RequestMapper
+final readonly class RequestMapper
 {
-
-
     public function __construct
     (
         private ServerRequestFactoryInterface $serverRequestFactory,
-        private StreamFactoryInterface $streamFactory,
-        private UploadedFileFactoryInterface $uploadedFileFactory,
+        private StreamFactoryInterface        $streamFactory,
+        private UploadedFileFactoryInterface  $uploadedFileFactory,
     )
     {
 
